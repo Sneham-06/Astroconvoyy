@@ -8,6 +8,9 @@ import API_URL from '../config';
 export default function Login() {
     const [role, setRole] = useState<'driver' | 'head' | null>(null);
     const [accessCode, setAccessCode] = useState('');
+    const [officerId, setOfficerId] = useState('');
+    const [officerPassword, setOfficerPassword] = useState('');
+    const [loginError, setLoginError] = useState('');
     const [loading, setLoading] = useState(false);
     const [driverMode, setDriverMode] = useState<'menu' | 'entry' | 'sos' | 'login'>('login');
     const router = useRouter();
@@ -47,10 +50,22 @@ export default function Login() {
         }
     }, []);
 
+    // ── HARDCODED MILITARY HEAD CREDENTIALS ──────────────────────────────
+    const OFFICER_ID       = 'MJRSINGH';
+    const OFFICER_PASSWORD = 'ASTRA@2025';
+    // ─────────────────────────────────────────────────────────────────────
+
     const handleHeadLogin = async (e: React.FormEvent) => {
         e.preventDefault();
+        setLoginError('');
         setLoading(true);
-        // Head login logic (simplified for demo)
+
+        if (officerId.trim() !== OFFICER_ID || officerPassword !== OFFICER_PASSWORD) {
+            setLoginError('⛔ ACCESS DENIED — Invalid Officer ID or Password.');
+            setLoading(false);
+            return;
+        }
+
         localStorage.setItem('userRole', 'head');
         router.push('/dashboard');
     };
@@ -172,13 +187,51 @@ export default function Login() {
                     <form onSubmit={handleHeadLogin}>
                         <div className="flex-between mb-2">
                             <h3>OFFICER AUTHENTICATION</h3>
-                            <button className="btn" style={{ fontSize: '0.7rem' }} onClick={() => setRole(null)}>BACK</button>
+                            <button type="button" className="btn" style={{ fontSize: '0.7rem' }} onClick={() => { setRole(null); setLoginError(''); }}>BACK</button>
                         </div>
+
+                        {loginError && (
+                            <div style={{
+                                background: 'rgba(255,0,51,0.12)',
+                                border: '1px solid #ff0033',
+                                color: '#ff4466',
+                                padding: '0.6rem 1rem',
+                                borderRadius: '6px',
+                                fontSize: '0.82rem',
+                                marginBottom: '1rem',
+                                letterSpacing: '0.5px'
+                            }}>
+                                {loginError}
+                            </div>
+                        )}
+
                         <div className="form-group">
                             <label className="form-label">OFFICER ID</label>
-                            <input type="password" placeholder="Enter ID..." className="form-input" required />
+                            <input
+                                type="text"
+                                placeholder="e.g. MJRSINGH"
+                                className="form-input"
+                                value={officerId}
+                                onChange={e => { setOfficerId(e.target.value); setLoginError(''); }}
+                                required
+                                autoComplete="off"
+                            />
                         </div>
-                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }}>AUTHORIZE</button>
+                        <div className="form-group">
+                            <label className="form-label">SECURE PASSWORD</label>
+                            <input
+                                type="password"
+                                placeholder="••••••••"
+                                className="form-input"
+                                value={officerPassword}
+                                onChange={e => { setOfficerPassword(e.target.value); setLoginError(''); }}
+                                required
+                            />
+                        </div>
+
+                        <button type="submit" className="btn btn-primary" style={{ width: '100%' }} disabled={loading}>
+                            {loading ? 'VERIFYING...' : '🔐 AUTHORIZE ACCESS'}
+                        </button>
                     </form>
                 ) : (
                     /* Driver Section */

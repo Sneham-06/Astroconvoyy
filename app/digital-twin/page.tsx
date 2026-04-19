@@ -92,7 +92,14 @@ export default function DigitalTwinPage() {
             <Navigation />
 
             <div className="container">
-                <h1>🎮 Digital Twin Simulation</h1>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <polygon points="12 2 2 7 12 12 22 7 12 2"/>
+                        <polyline points="2 17 12 22 22 17"/>
+                        <polyline points="2 12 12 17 22 12"/>
+                    </svg>
+                    Digital Twin Simulation
+                </h1>
                 <p style={{ color: '#a0a0a0', marginBottom: '2rem' }}>
                     Visualize convoy movement with real-time threat detection and rerouting
                 </p>
@@ -319,12 +326,15 @@ export default function DigitalTwinPage() {
                                                                     
                                                                     const currentX = startPos.x + (endPos.x - startPos.x) * segmentProgress;
                                                                     const currentY = startPos.y + (endPos.y - startPos.y) * segmentProgress;
+                                                                    
+                                                                    const isMovingEast = endPos.x > startPos.x;
+                                                                    const transformScale = isMovingEast ? 'scaleX(-1)' : 'scaleX(1)';
 
                                                                     return (
                                                                         <div style={{
                                                                             position: 'absolute', left: `${currentX}%`, top: `${currentY}%`,
                                                                             fontSize: '2.2rem', transition: 'all 0.1s linear',
-                                                                            transform: 'translate(-50%, -50%) scaleX(-1)', zIndex: 10,
+                                                                            transform: `translate(-50%, -50%) ${transformScale}`, zIndex: 10,
                                                                             filter: 'drop-shadow(0 0 10px rgba(0,255,136,0.5))'
                                                                         }}>
                                                                             🚛

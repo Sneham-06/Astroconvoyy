@@ -41,7 +41,14 @@ export default function ConflictsPage() {
             <div className="container">
                 <div className="flex-between mb-2">
                     <div>
-                        <h1>🛣️ Convoy Scheduling & Conflict Avoidance</h1>
+                        <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                                <path d="M3 3h6l3 9h6l3-9"/>
+                                <path d="M12 12v9"/>
+                                <path d="M9 21h6"/>
+                            </svg>
+                            Convoy Scheduling &amp; Conflict Avoidance
+                        </h1>
                         <p style={{ color: '#a0a0a0' }}>
                             Detect and resolve route conflicts for optimal convoy coordination
                         </p>

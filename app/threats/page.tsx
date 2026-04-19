@@ -47,7 +47,14 @@ export default function ThreatsPage() {
             <Navigation />
 
             <div className="container">
-                <h1>⚠️ AI Threat & Vulnerability Analysis</h1>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/>
+                        <path d="M12 8v4"/>
+                        <path d="M12 16h.01"/>
+                    </svg>
+                    AI Threat &amp; Vulnerability Analysis
+                </h1>
                 <p style={{ color: '#a0a0a0', marginBottom: '2rem' }}>
                     Real-time threat prediction system with multi-factor risk assessment
                 </p>

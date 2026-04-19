@@ -55,7 +55,12 @@ export default function PriorityPage() {
             <Navigation />
 
             <div className="container">
-                <h1>⭐ AI Mission Priority Engine</h1>
+                <h1 style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="#d4af37" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" style={{ flexShrink: 0 }}>
+                        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+                    </svg>
+                    AI Mission Priority Engine
+                </h1>
                 <p style={{ color: '#a0a0a0', marginBottom: '2rem' }}>
                     Intelligent priority scoring for critical operations and road space allocation
                 </p>

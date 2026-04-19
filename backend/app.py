@@ -756,6 +756,21 @@ def get_convoy(convoy_id):
     conn.close()
     return jsonify({'error': 'Convoy not found'}), 404
 
+@app.route('/api/convoy/<int:convoy_id>/complete', methods=['POST'])
+def complete_convoy(convoy_id):
+    """Mark a convoy as completed and remove from active view"""
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    # Delete it from the convoys table so it doesn't clutter
+    c.execute('DELETE FROM convoys WHERE id = ?', (convoy_id,))
+    # Delete associated alerts and messages
+    c.execute('DELETE FROM alerts WHERE convoy_id = ?', (convoy_id,))
+    c.execute('DELETE FROM tactical_messages WHERE convoy_id = ?', (str(convoy_id),))
+    conn.commit()
+    conn.close()
+    
+    return jsonify({'success': True, 'message': 'Convoy completed and cleared from dashboard'})
+
 
 @app.route('/api/emergency/trigger', methods=['POST'])
 def trigger_emergency():

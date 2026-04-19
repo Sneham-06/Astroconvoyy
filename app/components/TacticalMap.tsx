@@ -79,8 +79,11 @@ export default function TacticalMap({ startPoint, destination, currentPosition, 
                 attributionControl: false
             }).setView(start, 13);
 
-            // Using Dark Theme tiles for military aesthetic
-            L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/dark_all/{z}/{x}/{y}{r}.png').addTo(mapInstance.current);
+            // Topographic tile layer — green contour style (matches military topo reference)
+            L.tileLayer('https://{s}.tile.opentopomap.org/{z}/{x}/{y}.png', {
+                maxZoom: 17,
+                attribution: '© OpenTopoMap contributors'
+            }).addTo(mapInstance.current);
             
             // Fix for the "white-map glitch" - ensure layout is correct
             setTimeout(() => {
@@ -155,8 +158,12 @@ export default function TacticalMap({ startPoint, destination, currentPosition, 
         L.marker(end, { icon: endIcon }).addTo(map);
 
         // LIVE MOVEMENT SIMULATION
+        // Determine direction to flip truck if moving East (right) since default emoji faces left
+        const isMovingEast = end[1] > start[1];
+        const transformStyle = isMovingEast ? 'transform: scaleX(-1); display: inline-block;' : 'display: inline-block;';
+
         const truckIcon = L.divIcon({
-            html: `<div style="font-size: 24px; filter: drop-shadow(0 0 5px #00ffff);">🚛</div>`,
+            html: `<div style="font-size: 24px; filter: drop-shadow(0 0 5px #00ffff); ${transformStyle}">🚛</div>`,
             className: 'truck-marker',
             iconSize: [24, 24],
             iconAnchor: [12, 12]
@@ -190,7 +197,7 @@ export default function TacticalMap({ startPoint, destination, currentPosition, 
                     border-radius: 8px;
                 }
                 .leaflet-tile {
-                    filter: brightness(0.8) contrast(1.2) !important;
+                    filter: none !important;
                 }
                 .custom-pin { filter: drop-shadow(0 0 5px rgba(30, 58, 138, 0.5)); }
                 .truck-marker { transition: all 0.1s linear; }
