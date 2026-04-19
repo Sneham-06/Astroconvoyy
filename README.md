@@ -37,26 +37,35 @@
 | **Intelligence Logic** | Rule-based scoring, Haversine routing algorithms |
 | **Aesthetics** | Glassmorphism UI, Orbitron Typography |
 
--- Folder Structure--
-d:\codered\
-├── app\                          # Next.js Command Center
-│   ├── components\
+# 📁 Project Structure
+
+```
+d:\codered
+├── app/                         # Next.js Command Center
+│   ├── components/
 │   │   ├── TacticalMap.tsx      # Satellite Tracking UI
-│   │   ├── Navigation.tsx       # Secure Nav Module
+│   │   ├── Navigation.tsx       # Secure Navigation Module
 │   │   └── VoiceCommand.tsx     # AI Voice Interface
-│   ├── driver\                  # Ground Unit (Driver) Portal ★
-│   ├── login\                   # RBAC Secure Entry ★
-│   ├── create\                  # Mission Initialization
-│   ├── dashboard\               # Strategic HQ Dashboard
-│   ├── threats\                 # Threat Intelligence Feed
-│   ├── digital-twin\            # Animated Operations Sim
-│   ├── globals.css              # Military Design Tokens
-│   └── config.ts                # Tactical API Configuration
-├── backend\                      # Intelligence Logic (Flask)
-│   ├── app.py                   # AI Engines & REST API
-│   └── astraconvoy.db           # Encrypted Mission DB
-├── scratch\                      # System Verification Scripts
-└── README.md                    # Strategic Documentation
+│   │
+│   ├── driver/                 # Ground Unit (Driver) Portal
+│   ├── login/                  # RBAC Secure Entry
+│   ├── create/                 # Mission Initialization
+│   ├── dashboard/              # Strategic HQ Dashboard
+│   ├── threats/                # Threat Intelligence Feed
+│   ├── digital-twin/           # Animated Operations Simulation
+│   │
+│   ├── globals.css             # Military Design Tokens
+│   └── config.ts               # Tactical API Configuration
+│
+├── backend/                    # Intelligence Logic (Flask)
+│   ├── app.py                  # AI Engines & REST API
+│   └── astraconvoy.db          # Encrypted Mission Database
+│
+├── scratch/                    # System Verification Scripts
+│
+└── README.md                   # Strategic Documentation
+```
+
 
 ---
 
