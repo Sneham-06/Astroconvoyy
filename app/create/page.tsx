@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Navigation from '../components/Navigation';
 import API_URL from '../config';
 import { useRouter } from 'next/navigation';
@@ -8,6 +8,13 @@ import { useRouter } from 'next/navigation';
 export default function CreateConvoy() {
     const router = useRouter();
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        if (!role) {
+            router.push('/login');
+        }
+    }, []);
     const [result, setResult] = useState<any>(null);
 
     const [formData, setFormData] = useState({

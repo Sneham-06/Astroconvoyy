@@ -11,6 +11,8 @@ export default function DigitalTwinPage() {
     const [isSimulating, setIsSimulating] = useState(false);
     const [events, setEvents] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
+    const [nightVision, setNightVision] = useState(false);
+    const [satelliteView, setSatelliteView] = useState(false);
 
     useEffect(() => {
         fetchConvoys();
@@ -86,7 +88,7 @@ export default function DigitalTwinPage() {
     const route = getRouteData();
 
     return (
-        <>
+        <div className={nightVision ? 'night-vision' : ''}>
             <Navigation />
 
             <div className="container">
@@ -203,6 +205,23 @@ export default function DigitalTwinPage() {
                                         </div>
                                     </div>
 
+                                    <div className="flex gap-1 mt-2">
+                                        <button 
+                                            className={`btn ${satelliteView ? 'btn-primary' : 'btn-minimal'}`} 
+                                            onClick={() => setSatelliteView(!satelliteView)}
+                                            style={{ flex: 1, fontSize: '0.7rem' }}
+                                        >
+                                            🛰️ {satelliteView ? 'SATELLITE ON' : 'SATELLITE OFF'}
+                                        </button>
+                                        <button 
+                                            className={`btn ${nightVision ? 'btn-danger' : 'btn-minimal'}`} 
+                                            onClick={() => setNightVision(!nightVision)}
+                                            style={{ flex: 1, fontSize: '0.7rem' }}
+                                        >
+                                            👓 {nightVision ? 'NIGHT VISION ON' : 'NIGHT VISION OFF'}
+                                        </button>
+                                    </div>
+
                                     {simulationProgress === 100 && (
                                         <div className="alert alert-info" style={{ marginTop: '1rem', background: 'rgba(0, 255, 136, 0.1)', borderColor: '#00ff88' }}>
                                             ✅ Convoy reached destination successfully!
@@ -223,8 +242,9 @@ export default function DigitalTwinPage() {
                                         <div>
                                             {/* Simulated Map */}
                                             <div
+                                                className={satelliteView ? 'satellite-view-bg' : ''}
                                                 style={{
-                                                    background: 'linear-gradient(135deg, #0a0e0f 0%, #1a3d2e 100%)',
+                                                    background: satelliteView ? '' : 'linear-gradient(135deg, #0a0e0f 0%, #1a3d2e 100%)',
                                                     padding: '2rem',
                                                     borderRadius: '10px',
                                                     border: '2px solid rgba(61, 122, 92, 0.3)',
@@ -233,66 +253,87 @@ export default function DigitalTwinPage() {
                                                     overflow: 'hidden'
                                                 }}
                                             >
+                                                <div className="map-grid-overlay"></div>
                                                 {/* Route Path */}
                                                 <div style={{ position: 'relative', height: '100%' }}>
-                                                    {route.waypoints.map((waypoint: string, index: number) => {
-                                                        const progress = (index / (route.waypoints.length - 1)) * 100;
-                                                        const isPassed = simulationProgress >= progress;
+                                                    {(() => {
+                                                        // Helper to get consistent screen positions
+                                                        const getPos = (idx: number) => {
+                                                            const hasCoords = route.waypoint_coords && route.waypoint_coords[idx] && route.waypoint_coords[idx].lat !== 0;
+                                                            
+                                                            if (hasCoords) {
+                                                                const allLats = route.waypoint_coords.map((c: any) => c.lat).filter((l: number) => l !== 0);
+                                                                const allLons = route.waypoint_coords.map((c: any) => c.lon).filter((l: number) => l !== 0);
+                                                                const minLat = Math.min(...allLats);
+                                                                const maxLat = Math.max(...allLats);
+                                                                const minLon = Math.min(...allLons);
+                                                                const maxLon = Math.max(...allLons);
+                                                                const latRange = maxLat - minLat || 1;
+                                                                const lonRange = maxLon - minLon || 1;
+                                                                const lat = route.waypoint_coords[idx].lat;
+                                                                const lon = route.waypoint_coords[idx].lon;
+                                                                return {
+                                                                    x: 10 + ((lon - minLon) / lonRange) * 80,
+                                                                    y: 80 - ((lat - minLat) / latRange) * 60
+                                                                };
+                                                            } else {
+                                                                return {
+                                                                    x: 10 + (idx * 75 / (route.waypoints.length - 1)),
+                                                                    y: 40 + Math.sin(idx) * 30
+                                                                };
+                                                            }
+                                                        };
+
+                                                        const waypointPositions = route.waypoints.map((_: any, i: number) => getPos(i));
 
                                                         return (
-                                                            <div
-                                                                key={index}
-                                                                style={{
-                                                                    position: 'absolute',
-                                                                    left: `${10 + (index * 75 / route.waypoints.length)}%`,
-                                                                    top: `${20 + Math.sin(index) * 30}%`,
-                                                                    animation: isPassed ? 'fadeIn 0.5s ease' : 'none'
-                                                                }}
-                                                            >
-                                                                <div
-                                                                    style={{
-                                                                        width: '20px',
-                                                                        height: '20px',
-                                                                        borderRadius: '50%',
-                                                                        background: isPassed ? '#00ff88' : '#3d7a5c',
-                                                                        border: `3px solid ${isPassed ? '#00ff88' : '#3d7a5c'}`,
-                                                                        boxShadow: isPassed ? '0 0 20px rgba(0, 255, 136, 0.6)' : 'none',
-                                                                        marginBottom: '0.5rem',
-                                                                        transition: 'all 0.5s ease'
-                                                                    }}
-                                                                />
-                                                                <div
-                                                                    style={{
-                                                                        fontSize: '0.5rem',
-                                                                        color: isPassed ? '#00ff88' : '#888',
-                                                                        whiteSpace: 'nowrap',
-                                                                        fontWeight: isPassed ? 'bold' : 'normal',
-                                                                        maxWidth: '60px',
-                                                                        overflow: 'hidden',
-                                                                        textOverflow: 'ellipsis',
-                                                                        textAlign: 'center'
-                                                                    }}
-                                                                >
-                                                                    {waypoint}
-                                                                </div>
-                                                            </div>
-                                                        );
-                                                    })}
+                                                            <>
+                                                                {/* Draw Waypoints */}
+                                                                {route.waypoints.map((waypoint: string, index: number) => {
+                                                                    const pos = waypointPositions[index];
+                                                                    const progress = (index / (route.waypoints.length - 1)) * 100;
+                                                                    const isPassed = simulationProgress >= progress;
 
-                                                    {/* Convoy Icon - Flipped to face opposite */}
-                                                    <div
-                                                        style={{
-                                                            position: 'absolute',
-                                                            left: `${10 + (simulationProgress * 0.75)}%`,
-                                                            top: `${20 + Math.sin(simulationProgress / 30) * 30}%`,
-                                                            fontSize: '2rem',
-                                                            transition: 'all 0.3s ease',
-                                                            animation: isSimulating ? 'pulse-red 1s infinite' : 'none',
-                                                            transform: 'scaleX(-1)'
-                                                        }}
-                                                    >
-                                                        🚛
-                                                    </div>
+                                                                    return (
+                                                                        <div key={index} style={{ position: 'absolute', left: `${pos.x}%`, top: `${pos.y}%`, transition: 'all 0.5s ease', zIndex: 5 }}>
+                                                                            <div style={{
+                                                                                width: '16px', height: '16px', borderRadius: '50%',
+                                                                                background: isPassed ? '#00ff88' : '#3d7a5c',
+                                                                                boxShadow: isPassed ? '0 0 15px #00ff88' : 'none',
+                                                                                marginBottom: '0.4rem'
+                                                                            }} />
+                                                                            <div style={{ fontSize: '0.6rem', color: isPassed ? '#00ff88' : '#666', textAlign: 'center', maxWidth: '50px' }}>{waypoint}</div>
+                                                                        </div>
+                                                                    );
+                                                                })}
+
+                                                                {/* Draw Moving Truck */}
+                                                                {(() => {
+                                                                    const totalWaypoints = route.waypoints.length;
+                                                                    const progressVal = (simulationProgress / 100) * (totalWaypoints - 1);
+                                                                    const segmentIndex = Math.min(Math.floor(progressVal), totalWaypoints - 2);
+                                                                    const segmentProgress = progressVal - segmentIndex;
+                                                                    
+                                                                    const startPos = waypointPositions[segmentIndex];
+                                                                    const endPos = waypointPositions[segmentIndex + 1];
+                                                                    
+                                                                    const currentX = startPos.x + (endPos.x - startPos.x) * segmentProgress;
+                                                                    const currentY = startPos.y + (endPos.y - startPos.y) * segmentProgress;
+
+                                                                    return (
+                                                                        <div style={{
+                                                                            position: 'absolute', left: `${currentX}%`, top: `${currentY}%`,
+                                                                            fontSize: '2.2rem', transition: 'all 0.1s linear',
+                                                                            transform: 'translate(-50%, -50%) scaleX(-1)', zIndex: 10,
+                                                                            filter: 'drop-shadow(0 0 10px rgba(0,255,136,0.5))'
+                                                                        }}>
+                                                                            🚛
+                                                                        </div>
+                                                                    );
+                                                                })()}
+                                                            </>
+                                                        );
+                                                    })()}
                                                 </div>
                                             </div>
 
@@ -387,6 +428,6 @@ export default function DigitalTwinPage() {
                     </>
                 )}
             </div>
-        </>
+        </div>
     );
 }

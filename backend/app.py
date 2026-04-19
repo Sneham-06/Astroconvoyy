@@ -94,6 +94,14 @@ def init_db():
                   created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
                   FOREIGN KEY (convoy_id) REFERENCES convoys(id))''')
     
+    # Tactical Messages table
+    c.execute('''CREATE TABLE IF NOT EXISTS tactical_messages
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  convoy_id TEXT NOT NULL,
+                  sender TEXT NOT NULL,
+                  content TEXT NOT NULL,
+                  timestamp TIMESTAMP DEFAULT CURRENT_TIMESTAMP)''')
+    
     conn.commit()
     conn.close()
 
@@ -164,6 +172,33 @@ INDIAN_CITIES = {
     'Barmer': (25.7521, 71.3967),
     'Bikaner': (28.0229, 73.3119),
     'Ganganagar': (29.9039, 73.8772),
+    
+    # More Indian Cities
+    'Lucknow': (26.8467, 80.9462),
+    'Kanpur': (26.4499, 80.3319),
+    'Agra': (27.1767, 78.0081),
+    'Varanasi': (25.3176, 82.9739),
+    'Meerut': (28.9845, 77.7064),
+    'Ghaziabad': (28.6692, 77.4538),
+    'Noida': (28.5355, 77.3910),
+    'Gurgaon': (28.4595, 77.0266),
+    'Faridabad': (28.4089, 77.3178),
+    'Ludhiana': (30.9010, 75.8573),
+    'Jalandhar': (31.3260, 75.5762),
+    'Kota': (25.2138, 75.8648),
+    'Rajkot': (22.3039, 70.8022),
+    'Surat': (21.1702, 72.8311),
+    'Vadodara': (22.3072, 73.1812),
+    'Nashik': (19.9975, 73.7898),
+    'Aurangabad': (19.8762, 75.3433),
+    'Mysore': (12.2958, 76.6394),
+    'Madurai': (9.9252, 78.1198),
+    'Vijayawada': (16.5062, 80.6480),
+    'Guntur': (16.3067, 80.4365),
+    'Warangal': (17.9689, 79.5941),
+    'Hubli': (15.3647, 75.1240),
+    'Salem': (11.6643, 78.1460),
+    'Tiruchirappalli': (10.7905, 78.7047),
 }
 
 def calculate_distance(start, dest):
@@ -253,19 +288,19 @@ def calculate_distance(start, dest):
                 is_hilly = True
                 break
     
-    # Apply appropriate road factor
+    # Apply appropriate road factor (calibrated for Indian highways)
     if is_mountainous:
-        road_factor = 1.35  # Mountainous terrain adds 35% to distance
+        road_factor = 1.32  # Mountainous terrain adds 32% to distance (previously 1.35)
     elif is_hilly:
-        road_factor = 1.32  # Hilly terrain adds 32% to distance
+        road_factor = 1.28  # Hilly terrain adds 28% to distance (previously 1.32)
     else:
         # For longer distances, road factor is higher due to more curves
         if straight_line_distance > 1500:
-            road_factor = 1.35  # Long distance routes
+            road_factor = 1.20  # Long distance routes (previously 1.35)
         elif straight_line_distance > 800:
-            road_factor = 1.30  # Medium distance routes
+            road_factor = 1.18  # Medium distance (previously 1.30)
         else:
-            road_factor = 1.25  # Short distance routes
+            road_factor = 1.15  # Short distance (previously 1.25)
     
     # Calculate actual road distance
     road_distance = straight_line_distance * road_factor
@@ -294,19 +329,66 @@ def optimize_route(start_point, destination, mission_type, load, num_vehicles):
     # Generate multiple route options
     routes = []
     
+    # Function to get coordinates for waypoints
+    def get_coords(waypoint_list):
+        coords_list = []
+        for wp in waypoint_list:
+            # Try to find coordinates for the waypoint
+            found = False
+            for city, coords in INDIAN_CITIES.items():
+                if wp.lower() in city.lower() or city.lower() in wp.lower():
+                    coords_list.append({'name': wp, 'lat': coords[0], 'lon': coords[1]})
+                    found = True
+                    break
+            if not found:
+                # Fallback to random offset near the start/dest if unknown
+                coords_list.append({'name': wp, 'lat': 0, 'lon': 0})
+        return coords_list
+
     # Route 1: Fastest (Highway)
+    route1_waypoints = [start_point, f"Checkpoint-{random.randint(10,99)}", f"Bridge-{random.randint(100,999)}", destination]
     route1 = {
         'route_name': 'Highway Route (Recommended)',
         'distance_km': distance,
+        'eta_hours': distance / 60,
         'terrain': 'plain',
-        'weather': random.choice(['clear', 'cloudy', 'rainy']),
-        'traffic': random.choice(['low', 'medium']),
+        'weather': 'clear',
+        'traffic': 'medium',
         'road_type': 'highway',
-        'waypoints': [start_point, f"{start_point}-Junction-1", f"Highway-{destination}", destination]
+        'waypoints': route1_waypoints,
+        'waypoint_coords': get_coords(route1_waypoints)
     }
+    
+    # Route 2: Backup (State Road)
+    route2_waypoints = [start_point, "Rural-Crossing", "Forest-Path", destination]
+    route2 = {
+        'route_name': 'Secondary Route (Backup)',
+        'distance_km': round(distance * 1.15),
+        'eta_hours': (distance * 1.15) / 45,
+        'terrain': 'hilly',
+        'weather': 'cloudy',
+        'traffic': 'low',
+        'road_type': 'state_road',
+        'waypoints': route2_waypoints,
+        'waypoint_coords': get_coords(route2_waypoints)
+    }
+    
+    # Route 3: Emergency (Rural/Unpaved)
+    route3_waypoints = [start_point, "Border-Track", "Hill-Pass", destination]
+    route3 = {
+        'route_name': 'Emergency Route (High Stealth)',
+        'distance_km': round(distance * 1.30),
+        'eta_hours': (distance * 1.30) / 35,
+        'terrain': 'mountain',
+        'weather': 'rainy',
+        'traffic': 'low',
+        'road_type': 'rural',
+        'waypoints': route3_waypoints,
+        'waypoint_coords': get_coords(route3_waypoints)
+    }
+
     route1['score'] = calculate_route_score(route1['terrain'], route1['weather'], 
                                             route1['traffic'], route1['road_type'])
-    route1['eta_hours'] = distance / 60  # Avg 60 km/h
     routes.append(route1)
     
     # Route 2: Backup (State Road)
@@ -674,21 +756,6 @@ def get_convoy(convoy_id):
     conn.close()
     return jsonify({'error': 'Convoy not found'}), 404
 
-@app.route('/api/alerts', methods=['GET'])
-def get_alerts():
-    """Get all active alerts"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute('''SELECT a.*, c.convoy_name 
-                 FROM alerts a 
-                 JOIN convoys c ON a.convoy_id = c.id 
-                 WHERE a.resolved = 0 
-                 ORDER BY a.created_at DESC''')
-    alerts = [dict(row) for row in c.fetchall()]
-    conn.close()
-    
-    return jsonify({'alerts': alerts})
 
 @app.route('/api/emergency/trigger', methods=['POST'])
 def trigger_emergency():
@@ -812,56 +879,7 @@ def send_v2v_message():
     
     return jsonify({'success': True, 'message': 'V2V message sent'})
 
-@app.route('/api/v2v/messages', methods=['GET'])
-def get_v2v_messages():
-    """Get recent V2V messages"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    c.execute('''SELECT m.*, 
-                 c1.convoy_name as from_convoy_name,
-                 c2.convoy_name as to_convoy_name
-                 FROM v2v_messages m
-                 JOIN convoys c1 ON m.from_convoy_id = c1.id
-                 LEFT JOIN convoys c2 ON m.to_convoy_id = c2.id
-                 ORDER BY m.created_at DESC LIMIT 20''')
-    messages = [dict(row) for row in c.fetchall()]
-    conn.close()
-    
-    return jsonify({'messages': messages})
 
-@app.route('/api/analytics/dashboard', methods=['GET'])
-def get_dashboard_analytics():
-    """Get dashboard analytics"""
-    conn = sqlite3.connect(DATABASE)
-    conn.row_factory = sqlite3.Row
-    c = conn.cursor()
-    
-    # Total convoys
-    c.execute('SELECT COUNT(*) as total FROM convoys WHERE status = "active"')
-    total_convoys = c.fetchone()['total']
-    
-    # High threat convoys
-    c.execute('SELECT COUNT(*) as total FROM convoys WHERE threat_level >= 6 AND status = "active"')
-    high_threat = c.fetchone()['total']
-    
-    # Active emergencies
-    c.execute('SELECT COUNT(*) as total FROM alerts WHERE alert_type = "emergency" AND resolved = 0')
-    active_emergencies = c.fetchone()['total']
-    
-    # Average threat level
-    c.execute('SELECT AVG(threat_level) as avg_threat FROM convoys WHERE status = "active"')
-    avg_threat = c.fetchone()['avg_threat'] or 0
-    
-    conn.close()
-    
-    return jsonify({
-        'total_active_convoys': total_convoys,
-        'high_threat_convoys': high_threat,
-        'active_emergencies': active_emergencies,
-        'average_threat_level': round(avg_threat, 1),
-        'system_status': 'operational'
-    })
 
 # =============================================
 # NEW: DRIVER INTERFACE & SMS ENDPOINTS
@@ -1025,7 +1043,7 @@ def register_driver():
     """Register driver access code for a convoy"""
     data = request.json
     convoy_id = data.get('convoy_id')
-    driver_name = data.get('driver_name')
+    driver_name = data.get('call_sign') or data.get('driver_name') # Support both for anonymity
     phone_number = data.get('phone_number')
     
     # Generate access code
@@ -1053,10 +1071,216 @@ def register_driver():
         'message': 'Driver registered successfully. SMS sent with access code.'
     })
 
+@app.route('/api/driver/my-convoys', methods=['GET'])
+def get_driver_convoys():
+    """Get all convoys created by a specific unit (by call_sign/driver_name)"""
+    driver_name = request.args.get('call_sign') or request.args.get('driver_name', '')
+    
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # Find all convoy IDs linked to this driver name
+    c.execute("""
+        SELECT DISTINCT da.convoy_id 
+        FROM driver_access da
+        WHERE LOWER(da.driver_name) = LOWER(?)
+    """, (driver_name,))
+    convoy_ids = [str(row[0]) for row in c.fetchall()]
+    
+    if not convoy_ids:
+        conn.close()
+        return jsonify({'convoys': []})
+    
+    # Get full convoy info for all those IDs
+    placeholders = ','.join('?' * len(convoy_ids))
+    c.execute(f"""
+        SELECT id, convoy_name, start_point, destination, mission_type, 
+               num_vehicles, threat_level, status, eta
+        FROM convoys 
+        WHERE id IN ({placeholders})
+        ORDER BY id DESC
+    """, convoy_ids)
+    
+    rows = c.fetchall()
+    conn.close()
+    
+    convoys = [{
+        'id': r[0], 'convoy_name': r[1], 'start_point': r[2],
+        'destination': r[3], 'mission_type': r[4], 'num_vehicles': r[5],
+        'threat_level': r[6], 'status': r[7], 'eta': r[8]
+    } for r in rows]
+    
+    return jsonify({'convoys': convoys})
+
+
+# --- TACTICAL MESSAGING ---
+@app.route('/api/messages/send', methods=['POST'])
+def send_message():
+    data = request.json
+    convoy_id = str(data.get('convoy_id'))
+    content = data.get('content')
+    
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    c.execute("INSERT INTO tactical_messages (convoy_id, sender, content) VALUES (?, ?, ?)",
+              (convoy_id, 'COMMAND_CENTER', content))
+    conn.commit()
+    conn.close()
+    
+    print(f"TACTICAL MSG SAVED to {convoy_id}: {content}")
+    return jsonify({'success': True})
+
+@app.route('/api/messages/get/<convoy_id>', methods=['GET'])
+def get_messages(convoy_id):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # ADVANCED TACTICAL MONITOR
+    print(f"[TACTICAL] Incoming request from Unit: {convoy_id}")
+
+    # Find the real ID
+    official_id = convoy_id
+    if len(str(convoy_id)) > 10:
+        c.execute("SELECT id FROM convoys WHERE convoy_name LIKE ?", (f"%{convoy_id}%",))
+        row = c.fetchone()
+        if row:
+            official_id = str(row[0])
+            print(f"[HANDSHAKE] Temp ID {convoy_id} -> Official ID {official_id}")
+
+    # Get messages for this specific unit OR global broadcasts
+    c.execute("""SELECT content, timestamp FROM tactical_messages 
+                 WHERE convoy_id = ? OR convoy_id = 'ALL' 
+                 ORDER BY timestamp DESC""", (str(official_id),))
+    rows = c.fetchall()
+    conn.close()
+    
+    msgs = []
+    for r in rows:
+        content = r[0]
+        raw_ts = str(r[1])
+        # Safe time extraction: handles 'YYYY-MM-DD HH:MM:SS' or raw strings
+        ts_display = raw_ts.split(' ')[1] if ' ' in raw_ts else raw_ts
+        msgs.append({'content': content, 'timestamp': ts_display})
+    
+    return jsonify({'success': True, 'messages': msgs})
+
+# --- COMMAND CENTER ANALYTICS ---
+@app.route('/api/analytics/dashboard', methods=['GET'])
+def get_dashboard_stats():
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # Get active convoys
+    c.execute("SELECT COUNT(*) FROM convoys WHERE status = 'active'")
+    total_active = c.fetchone()[0]
+    
+    # Get average threat level
+    c.execute("SELECT AVG(threat_level) FROM convoys WHERE status = 'active'")
+    avg_threat = c.fetchone()[0] or 0
+    
+    # Get high threat count
+    c.execute("SELECT COUNT(*) FROM convoys WHERE status = 'active' AND threat_level >= 7")
+    high_threat = c.fetchone()[0]
+    
+    # Get active emergencies
+    c.execute("SELECT COUNT(*) FROM alerts WHERE severity = 'critical' AND resolved = 0")
+    emergencies = c.fetchone()[0]
+    
+    conn.close()
+    return jsonify({
+        'total_active_convoys': total_active,
+        'average_threat_level': round(avg_threat, 1),
+        'high_threat_convoys': high_threat,
+        'active_emergencies': emergencies,
+        'system_status': 'operational'
+    })
+
+@app.route('/api/alerts', methods=['GET'])
+def get_all_alerts():
+    conn = sqlite3.connect(DATABASE)
+    conn.row_factory = sqlite3.Row
+    c = conn.cursor()
+    c.execute('''SELECT a.*, c.convoy_name 
+                 FROM alerts a 
+                 JOIN convoys c ON a.convoy_id = c.id 
+                 WHERE a.resolved = 0 
+                 ORDER BY a.created_at DESC LIMIT 10''')
+    alerts_list = [dict(row) for row in c.fetchall()]
+    conn.close()
+    return jsonify({'alerts': alerts_list})
+
+@app.route('/api/v2v/messages', methods=['GET'])
+def get_v2v_history():
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # Get standard V2V messages
+    c.execute("SELECT from_convoy_id, message, created_at FROM v2v_messages")
+    v2v_rows = c.fetchall()
+    
+    # Get Tactical instructions
+    c.execute("SELECT convoy_id, content, timestamp FROM tactical_messages")
+    tactical_rows = c.fetchall()
+    
+    conn.close()
+    
+    combined = []
+    for r in v2v_rows:
+        combined.append({'from': f"UNIT-{r[0]}", 'message': r[1], 'time': r[2], 'type': 'V2V'})
+    for r in tactical_rows:
+        combined.append({'from': "HQ_COMMAND", 'message': f"TO UNIT-{r[0]}: {r[1]}", 'time': r[2], 'type': 'TAC'})
+    
+    # Sort by time descending
+    combined.sort(key=lambda x: x['time'], reverse=True)
+    
+    return jsonify({'messages': combined[:20]})
+
+@app.route('/api/driver/report', methods=['POST'])
+def driver_report():
+    data = request.json
+    convoy_id = str(data.get('convoy_id'))
+    message = data.get('message')
+    
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    
+    # Save as a special V2V message with 'REPORT' type
+    c.execute("INSERT INTO v2v_messages (from_convoy_id, to_convoy_id, message) VALUES (?, ?, ?)",
+              (convoy_id, 0, f"[SITREP] {message}"))
+    
+    # Also add as an alert for visibility
+    c.execute("INSERT INTO alerts (convoy_id, alert_type, severity, message) VALUES (?, ?, ?, ?)",
+              (convoy_id, 'report', 'medium', f"SITUATION REPORT: {message}"))
+    
+    conn.commit()
+    conn.close()
+    return jsonify({'success': True})
+@app.route('/api/driver/convoy/<convoy_id>', methods=['GET'])
+def get_driver_convoy(convoy_id):
+    conn = sqlite3.connect(DATABASE)
+    c = conn.cursor()
+    # Try finding by ID first
+    c.execute("SELECT * FROM convoys WHERE id = ?", (convoy_id,))
+    r = c.fetchone()
+    
+    # Fallback: Try finding by Name (useful if frontend uses temp timestamp name)
+    if not r:
+        c.execute("SELECT * FROM convoys WHERE convoy_name = ? OR convoy_name LIKE ?", 
+                  (convoy_id, f"%{convoy_id}%"))
+        r = c.fetchone()
+        
+    conn.close()
+    if r:
+        return jsonify({
+            'id': r[0], 'convoy_name': r[1], 'start_point': r[2],
+            'destination': r[3], 'mission_type': r[4], 'load_weight': r[5],
+            'num_vehicles': r[6], 'priority_score': r[7], 'status': r[8],
+            'threat_level': r[9], 'route_data': r[10], 'eta': r[12]
+        })
+    return jsonify({'error': 'Convoy not found'}), 404
 if __name__ == '__main__':
     import os
     port = int(os.environ.get('PORT', 5000))
-    print("🚀 AstraConvoy Backend Starting...")
-    print(f"📡 API Server running on port {port}")
-    print("✨ New Features: Automatic Rerouting + Driver SMS System")
+    print("AstraConvoy Backend Starting...")
+    print(f"API Server running on port {port}")
     app.run(debug=False, host='0.0.0.0', port=port)

@@ -1,42 +1,57 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
 
 export default function Navigation() {
     const pathname = usePathname();
+    const [userRole, setUserRole] = useState<string | null>(null);
+    const router = useRouter();
 
-    const navItems = [
-        { name: 'Home', path: '/' },
-        { name: 'Dashboard', path: '/dashboard' },
-        { name: 'Create Convoy', path: '/create' },
-        { name: 'Threat Analysis', path: '/threats' },
-        { name: 'Emergencies', path: '/emergencies' },
-        { name: 'Priority Engine', path: '/priority' },
-        { name: 'Conflicts', path: '/conflicts' },
-        { name: 'Digital Twin', path: '/digital-twin' },
-        { name: 'Driver Portal', path: '/driver' },
-    ];
+    useEffect(() => {
+        const role = localStorage.getItem('userRole');
+        setUserRole(role);
+    }, []);
+
+    const handleLogout = () => {
+        localStorage.clear(); // Complete wipe of all tactical data
+        setUserRole(null);
+        window.location.href = '/login'; // Force full refresh to clear React states
+    };
 
     return (
         <nav className="nav">
-            <div className="nav-container">
-                <div className="nav-logo">
-                    <h1>🛡️ AstraConvoy</h1>
-                    <span className="nav-badge">AI DEFENCE</span>
+            <div className="nav-container" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                <div style={{ flex: 1 }}>
+                    {/* Brand/Logo could go here if needed */}
                 </div>
-                <ul className="nav-links">
-                    {navItems.map((item) => (
-                        <li key={item.path}>
-                            <Link
-                                href={item.path}
-                                className={pathname === item.path ? 'active' : ''}
-                            >
-                                {item.name}
-                            </Link>
-                        </li>
-                    ))}
-                </ul>
+
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'center' }}>
+                    <Link href="/" style={{ 
+                        textDecoration: 'none', 
+                        fontSize: '1.2rem', 
+                        fontWeight: 'bold', 
+                        color: 'var(--military-gold)',
+                        letterSpacing: '2px'
+                    }}>
+                        🏠 HOME
+                    </Link>
+                </div>
+
+                <div style={{ flex: 1, display: 'flex', justifyContent: 'flex-end' }}>
+                    {userRole && userRole !== 'null' ? (
+                        <button className="btn btn-danger" onClick={handleLogout} style={{ padding: '0.6rem 1.2rem', fontSize: '0.8rem' }}>
+                            🚪 LOGOUT
+                        </button>
+                    ) : (
+                        <Link href="/login">
+                            <button className="btn btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.8rem' }}>
+                                🔑 LOGIN
+                            </button>
+                        </Link>
+                    )}
+                </div>
             </div>
         </nav>
     );

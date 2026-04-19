@@ -82,6 +82,11 @@
 - Priority score display
 - System analytics
 
+#### 11. **🔐 Role-Based Access Control (RBAC)** (★ NEW)
+- **Military Command Head**: Strategic oversight, mission creation, threat intelligence, and digital twin access.
+- **Cantonment Driver**: Ground-level mission execution, field reporting, and direct SOS access.
+- Secure access codes for field personnel.
+
 ---
 
 ## 🏗️ System Architecture
@@ -334,6 +339,75 @@ Response: {
   "active_emergencies": 0,
   "average_threat_level": 4.2
 }
+```
+
+### Driver Login
+```
+POST /api/driver/login
+Body: {
+  "access_code": "DRV-1234-1"
+}
+Response: {
+  "success": true, 
+  "driver": {
+    "convoy_id": 1,
+    "status": "active",
+    ...
+  }
+}
+```
+
+### Get Driver Convoy Info
+```
+GET /api/driver/convoy/<id>
+Response: Detailed convoy info for driver view with active alerts
+```
+
+### Driver SOS
+```
+POST /api/driver/sos
+Body: {
+  "convoy_id": 1, 
+  "location": "Sector 4", 
+  "issue_type": "ambush"
+}
+Response: {
+  "success": true, 
+  "message": "SOS sent to command center"
+}
+```
+
+### Register Driver
+```
+POST /api/driver/register
+Body: {
+  "convoy_id": 1, 
+  "driver_name": "John Doe", 
+  "phone_number": "555-0199"
+}
+Response: {
+  "success": true, 
+  "access_code": "DRV-xxxx-1"
+}
+```
+
+### Send SMS
+```
+POST /api/sms/send
+Body: {
+  "convoy_id": 1, 
+  "phone_number": "555-0199", 
+  "message": "Hello"
+}
+Response: {
+  "success": true
+}
+```
+
+### Get SMS History
+```
+GET /api/sms/history?convoy_id=1
+Response: {"sms_history": [...]}
 ```
 
 ---

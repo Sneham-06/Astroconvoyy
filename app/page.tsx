@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import Navigation from './components/Navigation';
 import API_URL from './config';
 import Link from 'next/link';
+import VoiceCommand from './components/VoiceCommand';
 
 export default function Home() {
   const [stats, setStats] = useState({
@@ -15,9 +16,15 @@ export default function Home() {
   });
 
   const [loading, setLoading] = useState(true);
+  const [userRole, setUserRole] = useState<string | null>(null);
 
   useEffect(() => {
     fetchDashboardStats();
+    // Use a listener to detect storage changes (logout from other tabs)
+    const checkRole = () => setUserRole(localStorage.getItem('userRole'));
+    checkRole();
+    window.addEventListener('storage', checkRole);
+    return () => window.removeEventListener('storage', checkRole);
   }, []);
 
   const fetchDashboardStats = async () => {
@@ -94,59 +101,95 @@ export default function Home() {
       <Navigation />
 
       <div className="container">
-        {/* Hero Section */}
-        <div className="text-center" style={{ padding: '4rem 0' }}>
-          <h1 style={{ fontSize: '3rem', marginBottom: '1rem', animation: 'fadeIn 1s ease' }}>
-            🛡️ AstraConvoy
-          </h1>
-          <h2 style={{ fontSize: '1.5rem', color: '#3d7a5c', marginBottom: '1rem' }}>
-            AI Defence Transport & Threat Intelligence System
-          </h2>
-          <p style={{ fontSize: '1.1rem', color: '#a0a0a0', maxWidth: '800px', margin: '0 auto 2rem' }}>
-            Advanced AI-powered convoy management system for the Indian Army.
-            Optimize routes, predict threats, ensure safety, and reduce delays with real-time intelligence.
-          </p>
-          <div className="flex-center gap-2">
-            <Link href="/create">
-              <button className="btn btn-primary">
-                🚀 Create New Convoy
-              </button>
-            </Link>
-            <Link href="/dashboard">
-              <button className="btn btn-warning">
-                📊 View Dashboard
-              </button>
-            </Link>
-            <Link href="/driver">
-              <button className="btn btn-primary" style={{ background: 'linear-gradient(135deg, #d4af37, #b8941f)' }}>
-                🚛 Driver Portal
-              </button>
-            </Link>
+        {/* Hero Section with Radar */}
+        <div className="grid grid-2 mb-3" style={{ alignItems: 'center' }}>
+          <div className="hud-scan card glass-premium" style={{ padding: '3rem' }}>
+            <h1 style={{ fontSize: '2.8rem', marginBottom: '0.5rem', textShadow: '0 0 20px rgba(212, 175, 55, 0.4)' }}>
+              🛡️ AstraConvoy
+            </h1>
+            <h2 style={{ fontSize: '1.2rem', color: '#3d7a5c', marginBottom: '1.5rem', letterSpacing: '3px' }}>
+              SECURE LOGISTICS | PREDICTIVE THREAT INTEL
+            </h2>
+            <p style={{ fontSize: '1.1rem', color: '#d0d0d0', marginBottom: '2rem', lineHeight: '1.8' }}>
+              The future of Indian Army convoy management. AI-driven route optimization, 
+              real-time threat scoring, and mission-critical prioritization. 
+              <strong> ACCESS AUTHORIZATION REQUIRED.</strong>
+            </p>
+            <div className="flex gap-2">
+              <Link href={userRole ? (userRole === 'driver' ? '/driver' : '/dashboard') : '/login'}>
+                <button className="btn btn-primary" style={{ padding: '1rem 3rem', fontSize: '1.2rem', fontWeight: 'bold' }}>
+                  {userRole ? '📊 OPEN COMMAND DASHBOARD' : '🔑 ENTER COMMAND SYSTEM'}
+                </button>
+              </Link>
+            </div>
+            
+            <div className="mt-3" style={{ paddingTop: '1.5rem', borderTop: '1px solid var(--border-color)' }}>
+              <div style={{ fontSize: '0.8rem', color: '#666', marginBottom: '0.5rem' }}>SYSTEM STATUS</div>
+              <div className="flex-between">
+                <div style={{ color: '#00ff88', fontSize: '0.9rem' }}>● AI ENGINE ONLINE</div>
+                <div style={{ color: '#00ff88', fontSize: '0.9rem' }}>● SAT-LINK ACTIVE</div>
+                <div style={{ color: '#00ff88', fontSize: '0.9rem' }}>● V2V ENCRYPTED</div>
+              </div>
+            </div>
+          </div>
+
+          <div className="text-center">
+            <div className="radar-container">
+              <div className="radar-grid"></div>
+              <div className="radar-sweep"></div>
+              {/* Simulated blips */}
+              <div style={{ position: 'absolute', top: '30%', left: '40%', width: '8px', height: '8px', background: '#ff0033', borderRadius: '50%', boxShadow: '0 0 10px #ff0033', animation: 'pulse-red 1s infinite' }}></div>
+              <div style={{ position: 'absolute', top: '60%', left: '70%', width: '6px', height: '6px', background: '#00ff88', borderRadius: '50%', boxShadow: '0 0 10px #00ff88' }}></div>
+              <div style={{ position: 'absolute', top: '20%', left: '20%', width: '6px', height: '6px', background: '#00ff88', borderRadius: '50%', boxShadow: '0 0 10px #00ff88' }}></div>
+            </div>
+            <div className="mt-2">
+              <span className="badge badge-high">SCANNING FOR THREATS...</span>
+            </div>
           </div>
         </div>
 
-        {/* Quick Stats */}
+        {/* Real-time Feed & Stats */}
         <div className="grid grid-4 mb-3">
-          <div className="stat-box">
-            <div className="stat-label">Active Convoys</div>
+          <div className="stat-box glow-border">
+            <div className="stat-label">ACTIVE MISSIONS</div>
             <div className="stat-value">{stats.total_active_convoys}</div>
           </div>
-          <div className="stat-box">
-            <div className="stat-label">High Threat</div>
+          <div className="stat-box glow-border" style={{ borderColor: 'var(--threat-high)' }}>
+            <div className="stat-label">HIGH RISK ZONES</div>
             <div className="stat-value" style={{ color: '#ff6b35' }}>{stats.high_threat_convoys}</div>
           </div>
-          <div className="stat-box">
-            <div className="stat-label">Emergencies</div>
+          <div className="stat-box glow-border" style={{ borderColor: 'var(--status-emergency)' }}>
+            <div className="stat-label">S.O.S ALERTS</div>
             <div className="stat-value" style={{ color: '#ff0033' }}>{stats.active_emergencies}</div>
           </div>
-          <div className="stat-box">
-            <div className="stat-label">Avg Threat Level</div>
-            <div className="stat-value">{stats.average_threat_level}/10</div>
+          <div className="stat-box glow-border">
+            <div className="stat-label">SYSTEM HEALTH</div>
+            <div className="stat-value" style={{ fontSize: '1.2rem', marginTop: '1rem', color: '#00ff88' }}>OPERATIONAL</div>
           </div>
+        </div>
+
+        {/* Mission Intelligence Feed */}
+        <div className="grid grid-2 mt-3">
+          <div className="card glow-border" style={{ maxHeight: '400px', overflowY: 'auto' }}>
+            <div className="card-header">
+              <h3 style={{ fontSize: '1rem', color: 'var(--military-gold)' }}>📡 LIVE INTELLIGENCE FEED</h3>
+              <span className="badge badge-minimal">REAL-TIME</span>
+            </div>
+            <div style={{ fontFamily: 'monospace', fontSize: '0.8rem', color: '#00ff88' }}>
+              <div className="mb-1">[10:42:01] SAT-LINK: ESTABLISHED. ENCRYPTION LEVEL 4.</div>
+              <div className="mb-1">[10:42:05] INTEL: WEATHER IN LADAKH SECTOR DETERIORATING.</div>
+              <div className="mb-1">[10:42:10] MISSION: CONVOY-ALPHA-09 REACHED CHECKPOINT 4.</div>
+              <div className="mb-1" style={{ color: 'var(--military-orange)' }}>[10:42:15] WARNING: UNUSUAL ACTIVITY DETECTED NEAR ROUTE 12.</div>
+              <div className="mb-1">[10:42:20] SYSTEM: AI THREAT ENGINE SCAN COMPLETED.</div>
+              <div className="mb-1">[10:42:25] SOS: NO ACTIVE EMERGENCY SIGNALS.</div>
+              <div className="mb-1">[10:42:30] DATA: V2V SIGNAL STRENGTH OPTIMAL.</div>
+            </div>
+          </div>
+          <VoiceCommand />
         </div>
 
         {/* System Features */}
-        <div className="card">
+        <div className="card mt-3">
           <div className="card-header">
             <h2>System Capabilities</h2>
           </div>
@@ -195,24 +238,11 @@ export default function Home() {
           </div>
         </div>
 
-        {/* Call to Action */}
-        <div
-          className="card text-center mt-3"
-          style={{
-            background: 'linear-gradient(135deg, rgba(26, 61, 46, 0.6), rgba(45, 95, 74, 0.6))',
-            padding: '3rem'
-          }}
-        >
-          <h2 style={{ marginBottom: '1rem' }}>Ready to Optimize Your Convoy Operations?</h2>
-          <p style={{ fontSize: '1.1rem', color: '#d0d0d0', marginBottom: '2rem' }}>
-            Experience the future of military logistics with AI-driven route planning,
-            threat intelligence, and real-time convoy management.
+        {/* System Monitoring Footer Notice */}
+        <div className="card text-center mt-3" style={{ background: 'rgba(26, 61, 46, 0.3)', padding: '2rem' }}>
+          <p style={{ color: 'var(--military-gold)', fontSize: '0.9rem', letterSpacing: '1px' }}>
+            📡 ALL ACTIVE CONVOYS ARE REGISTERED BY GROUND UNITS VIA THE DRIVER PORTAL.
           </p>
-          <Link href="/create">
-            <button className="btn btn-primary" style={{ fontSize: '1.1rem', padding: '1rem 2rem' }}>
-              🚀 Deploy Your First Convoy
-            </button>
-          </Link>
         </div>
       </div>
 
