@@ -182,6 +182,9 @@ export default function Login() {
                         <button className="btn btn-warning" style={{ padding: '2rem', height: 'auto' }} onClick={() => setRole('driver')}>
                             <span style={{ fontSize: '2rem' }}>🚛</span><br/>CANTONMENT DRIVER
                         </button>
+                        <Link href="/" className="btn btn-outline" style={{ marginTop: '1rem', width: '100%', textAlign: 'center' }}>
+                            🏠 BACK TO HOME
+                        </Link>
                     </div>
                 ) : role === 'head' ? (
                     <form onSubmit={handleHeadLogin}>
